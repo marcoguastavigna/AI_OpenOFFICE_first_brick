@@ -5,6 +5,8 @@ Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'i
 ## File
 *   `ollama_bridge.py`: Script principale contenente le macro e la logica di connessione.
 
+![Menu Ollama in OpenOffice](screenshot_menu.png)
+
 ## Installazione (OpenOffice / LibreOffice su Windows)
 1.  Assicurati di avere [Ollama](https://ollama.com) installato e funzionante (`ollama run llama3` o altro modello).
 2.  Copia il file `ollama_bridge.py` nella cartella degli script utente:
