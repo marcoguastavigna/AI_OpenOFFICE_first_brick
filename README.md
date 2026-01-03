@@ -20,6 +20,12 @@ Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'i
     *   `Ollama_AnalisiTono`
     *   ...e altre.
 
+## Versione per Word / WPS Office (Sperimentale)
+La cartella include anche `ollama_bridge.bas`, un modulo VBA.
+*   Importalo nell'editor VBA di Word (`Alt+F11` > Importa).
+*   Configura l'URL se diverso da localhost.
+*   **Nota**: Include timeout aumentati per gestire connessioni lente/modelli pesanti.
+
 ## Funzioni Disponibili
 *   **Migliora Testo**: Rende più fluida la scrittura.
 *   **Riassumi**: Sintetizza il testo selezionato.
