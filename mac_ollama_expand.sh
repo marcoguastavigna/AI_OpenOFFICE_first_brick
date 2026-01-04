@@ -60,3 +60,37 @@ except Exception as e:
 
 # 6. Output
 echo "$CLEAN_RESPONSE"
+
+# 4. Parsing pulito
+CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
+import sys, json
+raw_data = sys.stdin.read()
+try:
+    data = json.loads(raw_data, strict=False)
+    if 'error' in data:
+        print('ERRORE OLLAMA: ' + data['error'])
+    elif 'response' in data:
+        print(data['response'])
+    else:
+        print('ERRORE STRUTTURA: ' + str(data))
+except Exception as e:
+    print('ERRORE PYTHON: ' + str(e))
+" 2>>"$LOGFILE")
+
+# 5. Output Finale
+FINAL_OUTPUT="$INPUT_TEXT
+
+--- TESTO ESPANSO ---
+$CLEAN_RESPONSE"
+
+# A. Copia SOLO la risposta pulita negli Appunti
+echo "$CLEAN_RESPONSE" | pbcopy
+log "Output (solo risposta) copiato negli appunti."
+
+# B. Notifica
+osascript -e 'tell application "System Events" to display notification "Espansione copiata negli appunti." with title "Ollama Finito"' 2>>"$LOGFILE"
+
+# C. Output per Automator
+echo "$FINAL_OUTPUT"
+
+log "=== FINE SCRIPT ==="

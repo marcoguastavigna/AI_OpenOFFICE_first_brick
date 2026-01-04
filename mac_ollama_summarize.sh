@@ -37,32 +37,17 @@ export PYTHONIOENCODING=utf-8
 
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
-
-# Leggiamo tutto lo stream
 raw_data = sys.stdin.read()
-
 try:
-    # Tenta il parsing con strict=False per accettare caratteri di controllo (es. \n reali)
     data = json.loads(raw_data, strict=False)
-    
     if 'error' in data:
         print('ERRORE OLLAMA: ' + data['error'])
     elif 'response' in data:
-        # Tutto ok
         print(data['response'])
     else:
         print('ERRORE STRUTTURA: ' + str(data))
-
 except Exception as e:
-    # Se fallisce, stampiamo l'errore Python e un pezzo del dato
     print('ERRORE PYTHON: ' + str(e))
-    print('--- INIZIO DATI RICEVUTI ---')
-    print(raw_data[:200]) # Primi 200 caratteri
-    print('--- FINE DATI ---')
-" 2>&1)
-
-# 6. Output (APPEND al testo originale per non perderlo)
-echo "$INPUT_TEXT"
 echo ""
 echo "--- RIASSUNTO OLLAMA ---"
 echo "$CLEAN_RESPONSE"

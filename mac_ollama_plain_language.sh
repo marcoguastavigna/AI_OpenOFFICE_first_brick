@@ -74,10 +74,22 @@ except Exception as e:
     print('ERRORE PYTHON: ' + str(e))
 " 2>>"$LOGFILE")
 
-# 5. Output
-echo "$INPUT_TEXT"
-echo ""
-echo "--- VERSIONE LINGUAGGIO CHIARO ---"
-echo "$CLEAN_RESPONSE"
+# 5. Output Finale
+# Costruiamo la stringa finale
+FINAL_OUTPUT="$INPUT_TEXT
+
+--- VERSIONE LINGUAGGIO CHIARO ---
+$CLEAN_RESPONSE"
+
+# A. Copia SOLO la risposta pulita negli Appunti (così incolli solo quello che serve)
+echo "$CLEAN_RESPONSE" | pbcopy
+log "Output (solo risposta) copiato negli appunti."
+
+# B. Notifica Visiva (Fix: System Events)
+osascript -e 'tell application "System Events" to display notification "Copiato negli appunti." with title "Ollama Completato"' 2>>"$LOGFILE"
+
+# C. Output standard per Automator (Originale + Risposta)
+# Automator userà questo se decide di funzionare, mostrando il confronto.
+echo "$FINAL_OUTPUT"
 
 log "=== FINE SCRIPT ==="

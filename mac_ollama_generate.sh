@@ -28,15 +28,7 @@ RESPONSE=$(printf '%s' "$INPUT_TEXT" | \
 $PYTHON -c "import json, sys; raw_text = sys.stdin.read(); print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + raw_text, 'stream': False}))" | \
 $CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
 
-# 4. Verifica risposta vuota
-if [ -z "$RESPONSE" ]; then
-    echo "Errore: Ollama non risponde."
-    exit 0
-fi
-
-# 5. Parsing con gestione Encoding esplicita
-export PYTHONIOENCODING=utf-8
-
+# 4. Parsing pulito
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
 raw_data = sys.stdin.read()
@@ -50,7 +42,22 @@ try:
         print('ERRORE STRUTTURA: ' + str(data))
 except Exception as e:
     print('ERRORE PYTHON: ' + str(e))
-" 2>&1)
+" 2>>"$LOGFILE")
 
-# 6. Output
-echo "$CLEAN_RESPONSE"
+# 5. Output Finale
+FINAL_OUTPUT="$INPUT_TEXT
+
+--- TESTO GENERATO ---
+$CLEAN_RESPONSE"
+
+# A. Copia SOLO la risposta pulita negli Appunti
+echo "$CLEAN_RESPONSE" | pbcopy
+log "Output (solo risposta) copiato negli appunti."
+
+# B. Notifica
+osascript -e 'tell application "System Events" to display notification "Generazione completata e copiata." with title "Ollama Finito"' 2>>"$LOGFILE"
+
+# C. Output per Automator
+echo "$FINAL_OUTPUT"
+
+log "=== FINE SCRIPT ==="
