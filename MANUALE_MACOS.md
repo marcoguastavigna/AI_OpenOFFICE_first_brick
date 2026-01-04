@@ -52,6 +52,7 @@ Ripeti i passaggi sopra per gli altri file, dando nomi diversi:
 *   `mac_ollama_summarize.sh` -> Salva come **Ollama Riassumi**
 *   `mac_ollama_expand.sh` -> Salva come **Ollama Estendi**
 *   `mac_ollama_generate.sh` -> Salva come **Ollama Genera**
+*   `mac_ollama_plain_language.sh` -> Salva come **Ollama Linguaggio Chiaro**
 
 ---
 
