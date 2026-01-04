@@ -8,7 +8,10 @@ Prima di iniziare, assicurati di avere:
 
 1.  **Ollama Installato**: Scarica e installa Ollama da [ollama.com](https://ollama.com).
 2.  **Ollama Attivo**: L'icona di Ollama (la lama) deve essere visibile nella barra dei menu in alto a destra.
-3.  **Modello Scaricato**: Gli script sono configurati per usare il modello `gemma3:4b` (veloce e potente).
+3.  **Python 3 (Già incluso)**: Gli script usano Python 3 per "parlare" con Ollama. macOS lo ha quasi sempre di serie.
+    *   Per verificare, apri il Terminale e scrivi: `/usr/bin/python3 --version`.
+    *   Se ti chiede di installare i "Developer Tools", accetta (è veloce).
+4.  **Modello Scaricato**: Gli script sono configurati per usare il modello `gemma3:4b` (veloce e potente).
     *   Apri il **Terminale** del Mac.
     *   Scrivi: `ollama pull gemma3:4b` e premi Invio.
     *   Attendi il download.
