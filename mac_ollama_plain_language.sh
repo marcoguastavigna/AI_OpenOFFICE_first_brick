@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ==============================================================================
-# OLLAMA MACOS QUICK ACTION: LINGUAGGIO CHIARO (DEBUG LOG)
+# OLLAMA MACOS QUICK ACTION: LINGUAGGIO CHIARO (PIPELINE FIX)
 #
-# Scrive un log su /tmp/ollama_log.txt per capire cosa non va.
+# Soluzione definitiva "Unexpected EOF": Pipeline diretta senza variabili intermedie.
 # ==============================================================================
 
 LOGFILE="/tmp/ollama_log.txt"
@@ -13,7 +13,7 @@ log() {
     echo "$(date '+%H:%M:%S') - $1" >> "$LOGFILE"
 }
 
-log "=== AVVIO SCRIPT ==="
+log "=== AVVIO SCRIPT (PIPELINE) ==="
 
 # Percorsi assoluti
 CURL="/usr/bin/curl"
@@ -25,7 +25,6 @@ MODEL="gemma3:4b"
 PROMPT_PREFIX="Riscrivi il seguente testo applicando i principi del Linguaggio Chiaro (Plain Language) italiano: usa parole comuni, frasi brevi, forma attiva ed elimina il burocratese. Restituisci solo il testo riscritto:"
 
 export PYTHONIOENCODING=utf-8
-log "Configurazione caricata. Modello: $MODEL"
 
 # 1. Controllo Input
 INPUT_TEXT="$1"
@@ -34,30 +33,22 @@ if [ -z "$INPUT_TEXT" ]; then
     echo "Errore: Nessun testo selezionato."
     exit 0
 fi
-log "Testo ricevuto (primi 20 car): ${INPUT_TEXT:0:20}..."
 
-# 2. Escape JSON
-log "Avvio escape JSON..."
-JSON_PAYLOAD=$(printf '%s' "$INPUT_TEXT" | $PYTHON -c "import json, sys; raw_text = sys.stdin.read(); print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + raw_text, 'stream': False}))" 2>>"$LOGFILE")
+# 2. Generazione e Invio (TUTTO IN UNA PIPELINE)
+# printf -> python (crea json) -> curl (invia) -> variabile RESPONSE
+log "Avvio pipeline diretta..."
 
-if [ -z "$JSON_PAYLOAD" ]; then
-    log "ERRORE: Creazione payload JSON fallita (output vuoto)."
-    echo "Errore interno (Python JSON)."
-    exit 0
-fi
-log "Payload creato. Lunghezza: ${#JSON_PAYLOAD}"
-
-# 3. Chiamata Ollama
-log "Chiamata CURL in corso verso $OLLAMA_URL ..."
-RESPONSE=$(echo "$JSON_PAYLOAD" | $CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
+RESPONSE=$(printf '%s' "$INPUT_TEXT" | \
+$PYTHON -c "import json, sys; raw_text = sys.stdin.read(); print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + raw_text, 'stream': False}))" | \
+$CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
 
 log "Risposta CURL ricevuta. Lunghezza: ${#RESPONSE}"
 log "CONTENUTO RISPOSTA: $RESPONSE"
 
-# 4. Verifica risposta vuota
+# 3. Verifica errori
 if [ -z "$RESPONSE" ]; then
-    log "ERRORE: Risposta vuota da CURL."
-    echo "Errore: Output completamente vuoto da curl."
+    log "ERRORE: Risposta vuota."
+    echo "Errore: Output vuoto da Ollama."
     exit 0
 fi
 
@@ -67,8 +58,7 @@ if [[ "$RESPONSE" == curl:* ]]; then
     exit 0
 fi
 
-# 5. Parsing
-log "Avvio parsing risposta..."
+# 4. Parsing pulito
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
 raw_data = sys.stdin.read()
@@ -84,9 +74,7 @@ except Exception as e:
     print('ERRORE PYTHON: ' + str(e))
 " 2>>"$LOGFILE")
 
-log "Parsing completato."
-
-# 6. Output
+# 5. Output
 echo "$INPUT_TEXT"
 echo ""
 echo "--- VERSIONE LINGUAGGIO CHIARO ---"

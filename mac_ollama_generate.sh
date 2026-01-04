@@ -23,13 +23,10 @@ if [ -z "$INPUT_TEXT" ]; then
     exit 0
 fi
 
-# 2. Escape JSON
-JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
-
-# 3. Chiamata Ollama
-# 3. Chiamata Ollama
-# Usiamo PIPE per passare il payload (più sicuro per testi lunghi)
-RESPONSE=$(echo "$JSON_PAYLOAD" | $CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
+# 2. Generazione e Invio (PIPELINE DIRETTA)
+RESPONSE=$(printf '%s' "$INPUT_TEXT" | \
+$PYTHON -c "import json, sys; raw_text = sys.stdin.read(); print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + raw_text, 'stream': False}))" | \
+$CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
 
 # 4. Verifica risposta vuota
 if [ -z "$RESPONSE" ]; then
