@@ -1,10 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# OLLAMA MACOS QUICK ACTION: RIASSUMI
-#
-# Crea una Quick Action in Automator chiamata "Ollama Riassumi"
-# e incolla questo codice.
+# OLLAMA MACOS QUICK ACTION: RIASSUMI (DEBUG)
 # ==============================================================================
 
 # Percorsi assoluti
@@ -23,31 +20,36 @@ if [ -z "$INPUT_TEXT" ]; then
     exit 0
 fi
 
-# 2. Escape JSON
+# 2. Escape JSON (Python gestisce meglio i caratteri speciali)
 JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
-# 3. Chiamata Ollama
+# 3. Chiamata Ollama (timeout 2 minuti)
+# --fail non lo mettiamo per poter leggere il corpo dell'errore (es. 404 message)
 RESPONSE=$($CURL --silent --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
 
-# 4. Verifica risposta vuota
+# 4. Verifica se curl ha fallito completamente (stringa vuota)
 if [ -z "$RESPONSE" ]; then
-    echo "Errore: Ollama non risponde."
+    echo "Errore: Connessione fallita. Ollama è acceso?"
     exit 0
 fi
 
-# 5. Estrazione Intelligente
+# 5. Estrazione Intelligente & Debug
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
+raw_data = sys.stdin.read()
 try:
-    data = json.load(sys.stdin)
+    data = json.loads(raw_data)
     if 'error' in data:
         print('ERRORE OLLAMA: ' + data['error'])
     elif 'response' in data:
         print(data['response'])
     else:
-        print('ERRORE IMPREVISTO: ' + str(data))
+        print('ERRORE STRUTTURA JSON: ' + str(data))
 except Exception as e:
-    print('ERRORE DI PARSING: ' + sys.stdin.read())
+    # Se non è JSON, mostriamo i primi 200 caratteri di cosa abbiamo ricevuto
+    print('ERRORE DI COMUNICAZIONE.')
+    print('Non ho ricevuto JSON valido. Ecco cosa è arrivato (primi 100 car):')
+    print(raw_data[:100])
 " 2>&1)
 
 # 6. Output
