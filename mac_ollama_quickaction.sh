@@ -12,7 +12,7 @@ PYTHON="/usr/bin/python3"
 
 # Configurazione
 OLLAMA_URL="http://127.0.0.1:11434/api/generate"
-MODEL="llama3" 
+MODEL="gemma3:4b" 
 PROMPT_PREFIX="Sei un assistente utile. Migliora il seguente testo in italiano. Restituisci SOLO il testo migliorato:"
 
 # 1. Controllo Input
