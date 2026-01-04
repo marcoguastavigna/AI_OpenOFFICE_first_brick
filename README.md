@@ -20,18 +20,13 @@ Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'i
     *   `Ollama_AnalisiTono`
     *   ...e altre.
 
+## Versione per macOS (Universale)
+La cartella include `mac_ollama_quickaction.sh`.
+*   Questo script va inserito in una **Azione Rapida (Quick Action)** di macOS Automator.
+*   Permette di usare l'AI in **qualsiasi programma** (TextEdit, Safari, Mail, Word per Mac) selezionando il testo > Tasto Destro > Servizi.
+
 ## Funzioni Disponibili
 *   **Migliora Testo**: Rende più fluida la scrittura.
-*   **Riassumi**: Sintetizza il testo selezionato.
-*   **Analisi Tono**: Ti dice se il testo suona aggressivo, formale, etc. (Visualizza in finestra).
-
-## Versione per SoftMaker Office (TextMaker)
-Il file `ollama_textmaker.bas` è specifico per **BasicMaker**.
-*   Apri BasicMaker (incluso in SoftMaker Office Standard/Pro).
-*   Incolla il codice o apri il file.
-*   Compila/Salva script.
-*   Da TextMaker: `Script` > `Esegui` per lanciare le macro.
-
 *   **Riassumi**: Sintetizza il testo selezionato.
 *   **Analisi Tono**: Ti dice se il testo suona aggressivo, formale, etc. (Visualizza in finestra).
 *   **Traduci**: Traduce in Inglese.
