@@ -27,8 +27,9 @@ fi
 JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
 # 3. Chiamata Ollama
-# Timeout aumentato a 5 minuti (300s) per Mac Intel o modelli pesanti
-RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD" 2>&1)
+# 3. Chiamata Ollama
+# Usiamo PIPE per passare il payload (più sicuro per testi lunghi)
+RESPONSE=$(echo "$JSON_PAYLOAD" | $CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
 
 # 4. Verifica risposta vuota
 if [ -z "$RESPONSE" ]; then

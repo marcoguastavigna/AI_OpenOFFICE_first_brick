@@ -21,7 +21,9 @@ Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'i
     *   ...e altre.
 
 ## Versione per macOS (Universale)
-La cartella include 4 script per **Automator**:
+Per istruzioni dettagliate, leggi il file [MANUALE_MACOS.md](MANUALE_MACOS.md).
+
+La cartella include 4 script:
 *   `mac_ollama_improve.sh`: Migliora il testo.
 *   `mac_ollama_summarize.sh`: Riassumi.
 *   `mac_ollama_expand.sh`: Estendi/Espandi.

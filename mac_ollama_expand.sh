@@ -29,8 +29,8 @@ JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL'
 # 3. Chiamata Ollama
 # 2>&1 cattura anche gli errori di connessione (stderr) nella variabile
 # 3. Chiamata Ollama
-# Timeout aumentato a 5 minuti (300s) per Mac Intel o modelli pesanti
-RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD" 2>&1)
+# Usiamo PIPE per passare il payload (più sicuro per testi lunghi)
+RESPONSE=$(echo "$JSON_PAYLOAD" | $CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
 
 # 4. Verifica risposta vuota (o errore curl)
 if [ -z "$RESPONSE" ]; then
