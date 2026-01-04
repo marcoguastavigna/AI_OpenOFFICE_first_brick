@@ -14,24 +14,11 @@ Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'i
     *   (Se la cartella `python` non esiste, creala).
 3.  Riavvia OpenOffice.
 4.  Vai su `Strumenti` > `Macro` > `Esegui macro` > `Macro personali` > `ollama_bridge`.
-5.  Troverai le funzioni:
+5.  Ti troverai le funzioni:
     *   `Ollama_Migliora`
     *   `Ollama_Riassumi`
     *   `Ollama_AnalisiTono`
     *   ...e altre.
-
-## Versione per macOS (Universale)
-Per istruzioni dettagliate, leggi il file [MANUALE_MACOS.md](MANUALE_MACOS.md).
-
-La cartella include 4 script:
-*   `mac_ollama_improve.sh`: Migliora il testo.
-*   `mac_ollama_summarize.sh`: Riassumi.
-*   `mac_ollama_expand.sh`: Estendi/Espandi.
-*   `mac_ollama_generate.sh`: Genera testo da uno spunto.
-*   `mac_ollama_plain_language.sh`: Riscrive in Linguaggio Chiaro (Plain Language).
-
-Crea diverse **Azioni Rapide** in Automator (una per ogni funzione che vuoi) e incolla il codice corrispondente.
-Potrai usarle tutte facendo Tasto Destro > Servizi.
 
 ## Funzioni Disponibili (OpenOffice/LibreOffice)
 *   **Migliora Testo**: Rende più fluida la scrittura.
