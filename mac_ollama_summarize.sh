@@ -63,5 +63,8 @@ except Exception as e:
     print('--- FINE DATI ---')
 " 2>&1)
 
-# 6. Output
+# 6. Output (APPEND al testo originale per non perderlo)
+echo "$INPUT_TEXT"
+echo ""
+echo "--- RIASSUNTO OLLAMA ---"
 echo "$CLEAN_RESPONSE"

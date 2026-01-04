@@ -50,5 +50,8 @@ except Exception as e:
     print('ERRORE DI PARSING: ' + sys.stdin.read())
 " 2>&1)
 
-# 6. Output
+# 6. Output (APPEND per avere sia il testo originale che il prompt)
+echo "$INPUT_TEXT"
+echo ""
+echo "--- IMAGE PROMPT ---"
 echo "$CLEAN_RESPONSE"
