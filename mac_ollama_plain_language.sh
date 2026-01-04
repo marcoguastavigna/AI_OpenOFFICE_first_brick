@@ -52,6 +52,7 @@ log "Chiamata CURL in corso verso $OLLAMA_URL ..."
 RESPONSE=$(echo "$JSON_PAYLOAD" | $CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
 
 log "Risposta CURL ricevuta. Lunghezza: ${#RESPONSE}"
+log "CONTENUTO RISPOSTA: $RESPONSE"
 
 # 4. Verifica risposta vuota
 if [ -z "$RESPONSE" ]; then
