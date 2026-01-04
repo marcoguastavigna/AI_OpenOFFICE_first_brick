@@ -6,7 +6,7 @@ import urllib2
 
 # === CONFIGURAZIONE ===
 OLLAMA_HOST = "http://127.0.0.1:11434"
-TIMEOUT_SEC = 120
+TIMEOUT_SEC = 180  # Aumentato a 3 minuti per sicurezza
 
 # === FUNZIONI HELPER UNO (OpenOffice) ===
 def get_current_doc():
