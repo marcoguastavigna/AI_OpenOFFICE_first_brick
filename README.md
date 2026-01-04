@@ -2,23 +2,27 @@
 
 Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'interno di **OpenOffice** (Apache OpenOffice) e LibreOffice.
 
-## File
-*   `ollama_bridge.py`: Script principale contenente le macro e la logica di connessione.
+## Funzionalità Disponibili
+Questo pacchetto include due script Python per OpenOffice/LibreOffice:
+
+### 1. `ollama_bridge.py` (Core)
+Include le funzioni di base e la gestione della configurazione.
+*   **Ollama_Migliora**: Riscrive il testo per renderlo più fluido.
+*   **Ollama_Riassumi**: Crea un riassunto conciso.
+*   **Ollama_Espandi**: Arricchisce il concetto selezionato.
+*   **Ollama_AnalisiGrammaticale**: Trova errori e suggerisce correzioni.
+*   **Ollama_ListaPuntata**: Trasforma il testo in elenco.
+*   **Ollama_TraduciInglese**: Traduce in inglese.
+*   **Ollama_Formale**: Riscrive con tono professionale.
+*   **Ollama_AnalisiTono**: Valuta il tono del testo.
+*   **Ollama_Configurazione**: **[NOVITÀ]** Apre il file di configurazione per impostare **Host** (es. server Cloud) e **Modello** personalizzato.
+
+### 2. `ollama_extra.py` (Extra)
+Funzioni avanzate che richiedono tempi di elaborazione più lunghi (Timeout: 5 minuti).
+*   **Ollama_Genera**: Genera un testo completo partendo da un titolo/spunto.
+*   **Ollama_LinguaggioChiaro**: Riscrive applicando i principi del Plain Language (anti-burocratese).
 
 ![Menu Ollama in OpenOffice](screenshot_menu.png)
-
-## Installazione (OpenOffice / LibreOffice su Windows)
-1.  Assicurati di avere [Ollama](https://ollama.com) installato e funzionante (`ollama run llama3` o altro modello).
-2.  Copia il file `ollama_bridge.py` nella cartella degli script utente:
-    *   **Percorso**: `%APPDATA%\OpenOffice\4\user\Scripts\python\`
-    *   (Se la cartella `python` non esiste, creala).
-3.  Riavvia OpenOffice.
-4.  Vai su `Strumenti` > `Macro` > `Esegui macro` > `Macro personali` > `ollama_bridge`.
-5.  Ti troverai le funzioni:
-    *   `Ollama_Migliora`
-    *   `Ollama_Riassumi`
-    *   `Ollama_AnalisiTono`
-    *   ...e altre.
 
 ## Funzioni Disponibili (OpenOffice/LibreOffice)
 *   **Migliora Testo**: Rende più fluida la scrittura.
