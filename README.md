@@ -21,11 +21,16 @@ Questo progetto contiene macro Python per integrare **Ollama** (AI locale) all'i
     *   ...e altre.
 
 ## Versione per macOS (Universale)
-La cartella include `mac_ollama_quickaction.sh`.
-*   Questo script va inserito in una **Azione Rapida (Quick Action)** di macOS Automator.
-*   Permette di usare l'AI in **qualsiasi programma** (TextEdit, Safari, Mail, Word per Mac) selezionando il testo > Tasto Destro > Servizi.
+La cartella include 4 script per **Automator**:
+*   `mac_ollama_improve.sh`: Migliora il testo.
+*   `mac_ollama_summarize.sh`: Riassumi.
+*   `mac_ollama_expand.sh`: Estendi/Espandi.
+*   `mac_ollama_generate.sh`: Genera testo da uno spunto.
 
-## Funzioni Disponibili
+Crea diverse **Azioni Rapide** in Automator (una per ogni funzione che vuoi) e incolla il codice corrispondente.
+Potrai usarle tutte facendo Tasto Destro > Servizi.
+
+## Funzioni Disponibili (OpenOffice/LibreOffice)
 *   **Migliora Testo**: Rende più fluida la scrittura.
 *   **Riassumi**: Sintetizza il testo selezionato.
 *   **Analisi Tono**: Ti dice se il testo suona aggressivo, formale, etc. (Visualizza in finestra).
