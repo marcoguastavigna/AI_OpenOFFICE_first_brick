@@ -9,9 +9,23 @@ import urllib2
 # Script separato per facilitare l'integrazione manuale.
 # ==============================================================================
 
-# === CONFIGURAZIONE ===
-OLLAMA_HOST = "http://127.0.0.1:11434"
-TIMEOUT_SEC = 120
+import os
+import subprocess
+
+# === CONFIGURAZIONE DEFAULT ===
+DEFAULT_HOST = "http://127.0.0.1:11434"
+TIMEOUT_SEC = 300 # 5 minuti per generazione testi lunghi
+CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".ollama_bridge_config.json")
+
+# === GESTIONE CONFIGURAZIONE (Condivisa con bridge) ===
+def load_config():
+    if not os.path.exists(CONFIG_FILE):
+        return {"host": DEFAULT_HOST, "model": ""}
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {"host": DEFAULT_HOST, "model": ""}
 
 # === FUNZIONI HELPER UNO (OpenOffice) ===
 def get_current_doc():
@@ -82,7 +96,7 @@ def http_post(url, data_dict):
         resp = urllib2.urlopen(req, timeout=TIMEOUT_SEC)
         return json.load(resp)
     except urllib2.URLError as e:
-        show_message("Errore connessione Ollama: " + str(e))
+        show_message("Errore connessione Ollama (" + url + "): " + str(e))
         return None
     except Exception as e:
         show_message("Errore generico: " + str(e))
@@ -96,13 +110,23 @@ def http_get(url):
     except:
         return None
 
+def get_config_host():
+    cfg = load_config()
+    return cfg.get("host", DEFAULT_HOST).rstrip('/')
+
 def get_active_model():
-    host = OLLAMA_HOST.rstrip('/')
-    # 1. Check running
+    cfg = load_config()
+    host = cfg.get("host", DEFAULT_HOST).rstrip('/')
+    forced_model = cfg.get("model", "")
+
+    if forced_model and len(forced_model) > 0:
+        return forced_model
+
+    # Auto-detect
     running = http_get(host + "/api/ps")
     if running and 'models' in running and len(running['models']) > 0:
         return running['models'][0]['name']
-    # 2. Check installed
+
     installed = http_get(host + "/api/tags")
     if installed and 'models' in installed and len(installed['models']) > 0:
         names = [m['name'] for m in installed['models']]
@@ -115,7 +139,8 @@ def get_active_model():
 
 def call_ollama_generate(prompt):
     model_name = get_active_model()
-    url = OLLAMA_HOST.rstrip('/') + "/api/generate"
+    host = get_config_host()
+    url = host + "/api/generate"
     payload = {
         "model": model_name,
         "prompt": prompt,

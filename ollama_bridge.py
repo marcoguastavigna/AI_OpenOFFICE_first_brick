@@ -4,9 +4,34 @@ import uno
 import json
 import urllib2
 
-# === CONFIGURAZIONE ===
-OLLAMA_HOST = "http://127.0.0.1:11434"
-TIMEOUT_SEC = 180  # Aumentato a 3 minuti per sicurezza
+import os
+import subprocess
+
+# === CONFIGURAZIONE DEFAULT ===
+DEFAULT_HOST = "http://127.0.0.1:11434"
+TIMEOUT_SEC = 180
+CONFIG_FILE = os.path.join(os.path.expanduser("~"), ".ollama_bridge_config.json")
+
+# === GESTIONE CONFIGURAZIONE ===
+def load_config():
+    """Carica la configurazione da file JSON."""
+    if not os.path.exists(CONFIG_FILE):
+        return {"host": DEFAULT_HOST, "model": ""}
+    
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {"host": DEFAULT_HOST, "model": ""}
+
+def save_config(config):
+    """Salva la configurazione su file JSON."""
+    try:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config, f, indent=4)
+        return True
+    except:
+        return False
 
 # === FUNZIONI HELPER UNO (OpenOffice) ===
 def get_current_doc():
@@ -78,7 +103,7 @@ def http_post(url, data_dict):
         resp = urllib2.urlopen(req, timeout=TIMEOUT_SEC)
         return json.load(resp)
     except urllib2.URLError as e:
-        show_message("Errore connessione Ollama: " + str(e))
+        show_message("Errore connessione Ollama (" + url + "): " + str(e))
         return None
     except Exception as e:
         show_message("Errore generico: " + str(e))
@@ -93,21 +118,30 @@ def http_get(url):
     except:
         return None
 
+def get_config_host():
+    cfg = load_config()
+    return cfg.get("host", DEFAULT_HOST).rstrip('/')
+
 def get_active_model():
     """
     Trova il modello migliore da usare.
-    1. Controlla se c'e' un modello gia' caricato in memoria (/api/ps).
-    2. Se no, prende il primo dalla lista dei modelli installati (/api/tags).
-    3. Fallback su 'llama3'.
+    1. Se c'e' un modello forzato in config, usa quello.
+    2. Se no, controlla /api/ps (modello attivo).
+    3. Se no, controlla /api/tags (primo installato).
     """
-    host = OLLAMA_HOST.rstrip('/')
+    cfg = load_config()
+    host = cfg.get("host", DEFAULT_HOST).rstrip('/')
+    forced_model = cfg.get("model", "")
 
-    # 1. Check running
+    if forced_model and len(forced_model) > 0:
+        return forced_model
+
+    # 2. Check running (Auto-detect)
     running = http_get(host + "/api/ps")
     if running and 'models' in running and len(running['models']) > 0:
         return running['models'][0]['name']
 
-    # 2. Check installed
+    # 3. Check installed
     installed = http_get(host + "/api/tags")
     if installed and 'models' in installed and len(installed['models']) > 0:
         # Preferisci modelli famosi se presenti
@@ -123,9 +157,11 @@ def get_active_model():
 def call_ollama_generate(prompt):
     """Chiama l'API generate di Ollama."""
     model_name = get_active_model()
-    # show_message("Uso il modello: " + model_name) # Debug opzionale
+    host = get_config_host()
+    
+    # show_message("Debug: Host=" + host + " Model=" + model_name)
 
-    url = OLLAMA_HOST.rstrip('/') + "/api/generate"
+    url = host + "/api/generate"
     payload = {
         "model": model_name,
         "prompt": prompt,
@@ -136,6 +172,30 @@ def call_ollama_generate(prompt):
     if response and 'response' in response:
         return response['response']
     return None
+
+# === CONFIGURATORE MACRO ===
+def Ollama_Configurazione(*args):
+    """Apre il file di configurazione per permettere all'utente di modificarlo."""
+    cfg = load_config() # Crea il file se non esiste con i default
+    if not os.path.exists(CONFIG_FILE):
+        save_config(cfg) # Scrive i default fisicamente
+    
+    # Avvisa l'utente
+    show_message(
+        "Si aprira' il file di configurazione.\n"
+        "Modifica 'host' (es. http://tuo-server:11434) e 'model'.\n"
+        "Se lasci 'model' vuoto, usera' quello attivo.\n"
+        "Salva e chiudi il file, poi riprova."
+    )
+    
+    # Apre il file con l'editor predefinito di sistema
+    try:
+        if os.name == 'nt': # Windows
+            os.startfile(CONFIG_FILE)
+        else: # Mac/Linux fallback
+            subprocess.call(('xdg-open', CONFIG_FILE))
+    except Exception as e:
+        show_message("Non riesco ad aprire il file: " + str(e) + "\nPercorso: " + CONFIG_FILE)
 
 # === AZIONI MACRO (Che l'utente vede) ===
 def Ollama_Migliora(*args):
@@ -289,5 +349,6 @@ g_exportedScripts = (
     Ollama_TraduciInglese,
     Ollama_Formale,
     Ollama_PromptImmagine,
-    Ollama_AnalisiTono
+    Ollama_AnalisiTono,
+    Ollama_Configurazione
 )
