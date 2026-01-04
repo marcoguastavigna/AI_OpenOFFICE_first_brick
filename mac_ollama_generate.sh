@@ -1,63 +1,67 @@
 #!/bin/bash
 
 # ==============================================================================
-# OLLAMA MACOS QUICK ACTION: GENERA
-#
-# Crea una Quick Action in Automator chiamata "Ollama Genera"
-# e incolla questo codice.
+# OLLAMA MACOS QUICK ACTION: GENERA (SAFE RESTORE)
 # ==============================================================================
 
-# Percorsi assoluti
-CURL="/usr/bin/curl"
-PYTHON="/usr/bin/python3"
-
-# Configurazione
 OLLAMA_URL="http://127.0.0.1:11434/api/generate"
-MODEL="gemma3:4b" 
-PROMPT_PREFIX="Usa il seguente testo come spunto (prompt) per generare un contenuto completo e creativo. Scrivi in italiano:"
+MODEL="gemma3:4b"
+PROMPT_PREFIX="Genera un testo completo basato sul seguente spunto o titolo:"
 
-# 1. Controllo Input
-INPUT_TEXT="$1"
-if [ -z "$INPUT_TEXT" ]; then
-    echo "Errore: Nessun testo selezionato."
+PYTHON="/usr/bin/python3"
+CURL="/usr/bin/curl"
+TMP_INPUT="/tmp/ollama_input.txt"
+TMP_PAYLOAD="/tmp/ollama_payload.json"
+
+export PYTHONIOENCODING=utf-8
+
+# 1. Input Ibrido (Argomenti o Stdin)
+if [ -n "$1" ]; then
+    printf '%s' "$1" > "$TMP_INPUT"
+else
+    cat > "$TMP_INPUT"
+fi
+
+if [ ! -s "$TMP_INPUT" ]; then
+    echo "ERRORE: Nessun testo selezionato (Ollama)"
     exit 0
 fi
 
-# 2. Generazione e Invio (PIPELINE DIRETTA)
-RESPONSE=$(printf '%s' "$INPUT_TEXT" | \
-$PYTHON -c "import json, sys; raw_text = sys.stdin.read(); print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + raw_text, 'stream': False}))" | \
-$CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
+$PYTHON -c "
+import json, sys
+try:
+    with open('$TMP_INPUT', 'r', encoding='utf-8') as f:
+        text = f.read()
+    payload = {
+        'model': '$MODEL',
+        'prompt': '$PROMPT_PREFIX\n\n' + text,
+        'stream': False
+    }
+    with open('$TMP_PAYLOAD', 'w', encoding='utf-8') as f:
+        json.dump(payload, f)
+except Exception as e:
+    print(f'Errore Python: {e}')
+"
 
-# 4. Parsing pulito
+RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @"$TMP_PAYLOAD")
+
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
-raw_data = sys.stdin.read()
 try:
-    data = json.loads(raw_data, strict=False)
-    if 'error' in data:
-        print('ERRORE OLLAMA: ' + data['error'])
-    elif 'response' in data:
+    data = json.load(sys.stdin)
+    if 'response' in data:
         print(data['response'])
+    elif 'error' in data:
+        print(f'ERRORE OLLAMA: {data['error']}')
     else:
-        print('ERRORE STRUTTURA: ' + str(data))
-except Exception as e:
-    print('ERRORE PYTHON: ' + str(e))
-" 2>>"$LOGFILE")
+        print(f'ERRORE RISPOSTA: {str(data)}')
+except Exception:
+    print('$RESPONSE')
+")
 
-# 5. Output Finale
-FINAL_OUTPUT="$INPUT_TEXT
-
---- TESTO GENERATO ---
-$CLEAN_RESPONSE"
-
-# A. Copia SOLO la risposta pulita negli Appunti
-echo "$CLEAN_RESPONSE" | pbcopy
-log "Output (solo risposta) copiato negli appunti."
-
-# B. Notifica
-osascript -e 'tell application "System Events" to display notification "Generazione completata e copiata." with title "Ollama Finito"' 2>>"$LOGFILE"
-
-# C. Output per Automator
-echo "$FINAL_OUTPUT"
-
-log "=== FINE SCRIPT ==="
+# Output: Originale + Testo Generato
+cat "$TMP_INPUT"
+echo ""
+echo ""
+echo "--- TESTO GENERATO ---"
+echo "$CLEAN_RESPONSE"

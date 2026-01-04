@@ -1,55 +1,77 @@
 #!/bin/bash
 
 # ==============================================================================
-# OLLAMA MACOS QUICK ACTION (DEBUG VERSION)
+# OLLAMA MACOS QUICK ACTION: MIGLIORA TESTO (SAFE RESTORE)
 #
-# Versione migliorata per mostrare il VERO errore di Ollama (es. "Modello non trovato").
+# Versione "Safe Mode": Usa file temporanei per evitare errori di shell/pipe.
 # ==============================================================================
-
-# Percorsi assoluti
-CURL="/usr/bin/curl"
-PYTHON="/usr/bin/python3"
 
 # Configurazione
 OLLAMA_URL="http://127.0.0.1:11434/api/generate"
-MODEL="gemma3:4b" 
-PROMPT_PREFIX="Sei un assistente utile. Migliora il seguente testo in italiano. Restituisci SOLO il testo migliorato:"
+MODEL="gemma3:4b"  # Sostituisci con il tuo modello (es. llama3, mistral)
+PROMPT_PREFIX="Migliora il seguente testo rendendolo più fluido, corretto e professionale, mantenendo il significato originale. Restituisci solo il testo migliorato:"
 
-# 1. Controllo Input
-INPUT_TEXT="$1"
-if [ -z "$INPUT_TEXT" ]; then
-    echo "Errore: Nessun testo selezionato."
-    exit 0
-fi
+# Percorsi e File Temporanei
+PYTHON="/usr/bin/python3"
+CURL="/usr/bin/curl"
+TMP_INPUT="/tmp/ollama_input.txt"
+TMP_PAYLOAD="/tmp/ollama_payload.json"
 
-# 2. Generazione e Invio (PIPELINE DIRETTA)
-# printf -> python (crea json) -> curl (invia)
-RESPONSE=$(printf '%s' "$INPUT_TEXT" | \
-$PYTHON -c "import json, sys; raw_text = sys.stdin.read(); print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + raw_text, 'stream': False}))" | \
-$CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @- 2>&1)
-
-# 4. Verifica risposta vuota
-if [ -z "$RESPONSE" ]; then
-    echo "Errore: Ollama non risponde. Assicurati che l'app Ollama sia aperta."
-    exit 0
-fi
-
-# 5. Parsing con gestione Encoding esplicita
-# PYTHONIOENCODING=utf-8 forza python a non usare ASCII
 export PYTHONIOENCODING=utf-8
 
+# 1. Recupera l'Input (Ibrido: Funziona sia con "Argomenti" che con "Stdin")
+if [ -n "$1" ]; then
+    # Se Automator passa come "Argomento"
+    printf '%s' "$1" > "$TMP_INPUT"
+else
+    # Se Automator passa come "Stdin"
+    cat > "$TMP_INPUT"
+fi
+
+# Debug (opzionale): decommenta la riga sotto per vedere se il file viene scritto
+# echo "Input size: $(wc -c < "$TMP_INPUT")" >> /tmp/ollama_debug.txt
+
+# Se il file è ancora vuoto, errore
+if [ ! -s "$TMP_INPUT" ]; then
+    echo "ERRORE: Nessun testo selezionato (Ollama)"
+    echo "Verifica in Automator: 'Pass input' -> 'to stdin' o 'as arguments'"
+    exit 0
+fi
+
+# 2. Crea il Payload JSON usando Python (più sicuro di jq/bash)
+$PYTHON -c "
+import json, sys
+try:
+    with open('$TMP_INPUT', 'r', encoding='utf-8') as f:
+        text = f.read()
+    payload = {
+        'model': '$MODEL',
+        'prompt': '$PROMPT_PREFIX\n\n' + text,
+        'stream': False
+    }
+    with open('$TMP_PAYLOAD', 'w', encoding='utf-8') as f:
+        json.dump(payload, f)
+except Exception as e:
+    print(f'Errore Python: {e}')
+"
+
+# 3. Chiama Ollama
+RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d @"$TMP_PAYLOAD")
+
+# 4. Estrae la risposta
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
-raw_data = sys.stdin.read()
 try:
-    data = json.loads(raw_data, strict=False)
-    if 'error' in data:
-        print('ERRORE OLLAMA: ' + data['error'])
-    elif 'response' in data:
+    data = json.load(sys.stdin)
+    if 'response' in data:
         print(data['response'])
+    elif 'error' in data:
+        print(f'ERRORE OLLAMA: {data['error']}')
     else:
-        print('ERRORE STRUTTURA: ' + str(data))
-except Exception as e:
-    print('ERRORE PYTHON: ' + str(e))
-# 6. Output
+        print(f'ERRORE RISPOSTA: {str(data)}')
+except Exception:
+    print('$RESPONSE')
+")
+
+# 5. Output Finale
 echo "$CLEAN_RESPONSE"
