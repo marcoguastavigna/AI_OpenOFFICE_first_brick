@@ -1,38 +1,47 @@
 #!/bin/bash
 
 # ==============================================================================
-# OLLAMA MACOS QUICK ACTION (AUTOMATOR)
+# OLLAMA MACOS QUICK ACTION (ROBUST VERSION)
 #
-# Guida all'installazione:
-# 1. Apri "Automator" su macOS.
-# 2. Crea nuovo "Azione Rapida" (Quick Action).
-# 3. Imposta: "Il flusso di lavoro riceve: Testo" in "ogni applicazione".
-# 4. Spunta "Le opzioni di output sostituiscono il testo selezionato" (se vuoi sostituire).
-# 5. Cerca l'azione "Esegui script shell" (Run Shell Script) e trascinala.
-# 6. Imposta Shell: "/bin/bash" e Passa input: "come argomenti".
-# 7. Incolla questo codice dentro.
-# 8. Salva con nome "Ollama Migliora" (o quello che vuoi).
-#
-# Ora puoi selezionare testo in QUALSIASI app, Tasto Destro > Servizi > Ollama Migliora
+# Se Automator dà errore "Dati non validi", usa questo script.
+# Usa percorsi assoluti per evitare problemi di PATH.
 # ==============================================================================
 
+# Percorsi assoluti (su macOS standard)
+CURL="/usr/bin/curl"
+PYTHON="/usr/bin/python3"
+
 # Configurazione
-OLLAMA_URL="http://localhost:11434/api/generate"
-MODEL="llama3" # Cambia con il tuo modello (es. mistral, gemma)
-PROMPT_PREFIX="Sei un assistente utile. Migliora e correggi il seguente testo in italiano, mantenendo il significato. Restituisci SOLO il testo migliorato senza preamboli:"
+OLLAMA_URL="http://127.0.0.1:11434/api/generate"
+MODEL="llama3" 
+PROMPT_PREFIX="Sei un assistente utile. Migliora il seguente testo in italiano. Restituisci SOLO il testo migliorato:"
 
-# Il testo selezionato arriva come primo argomento ($1)
+# 1. Controllo Input
 INPUT_TEXT="$1"
+if [ -z "$INPUT_TEXT" ]; then
+    echo "Errore: Nessun testo selezionato."
+    exit 0
+fi
 
-# Escape del testo per JSON
-# Nota: su macOS 'jq' potrebbe non essere installato di default, usiamo python per l'escape sicuro
-JSON_PAYLOAD=$(python3 -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
+# 2. Escape JSON sicuro con Python
+JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
-# Chiamata a Ollama via CURL
-RESPONSE=$(curl -s -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
+# 3. Chiamata Ollama
+# --max-time 120 imposta un timeout di 2 minuti
+RESPONSE=$($CURL --silent --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
 
-# Estrazione della risposta (usando python per parsing JSON affidabile)
-CLEAN_RESPONSE=$(echo "$RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['response'])")
+# 4. Verifica se c'è stata risposta
+if [ -z "$RESPONSE" ]; then
+    echo "Errore: Nessuna risposta da Ollama. Verifica che Ollama sia aperto."
+    exit 0
+fi
 
-# Restituisce il risultato (che Automator userà per sostituire il testo selezionato)
-echo "$CLEAN_RESPONSE"
+# 5. Estrazione pulita
+CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "import sys, json; data=json.load(sys.stdin); print(data.get('response', 'Errore: Risposta JSON non valida'))" 2>&1)
+
+# 6. Output finale
+if [ -z "$CLEAN_RESPONSE" ]; then
+    echo "Errore: Risposta vuota dal modello."
+else
+    echo "$CLEAN_RESPONSE"
+fi
