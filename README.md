@@ -26,6 +26,7 @@ La cartella include 4 script per **Automator**:
 *   `mac_ollama_summarize.sh`: Riassumi.
 *   `mac_ollama_expand.sh`: Estendi/Espandi.
 *   `mac_ollama_generate.sh`: Genera testo da uno spunto.
+*   `mac_ollama_image_prompt.sh`: Crea un prompt per immagini (Midjourney/SD) dal testo selezionato.
 
 Crea diverse **Azioni Rapide** in Automator (una per ogni funzione che vuoi) e incolla il codice corrispondente.
 Potrai usarle tutte facendo Tasto Destro > Servizi.
