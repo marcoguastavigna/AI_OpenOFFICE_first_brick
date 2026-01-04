@@ -279,42 +279,6 @@ def Ollama_AnalisiTono(*args):
     if result:
         show_message("Analisi Tono e Stile:\n\n" + result)
 
-
-def Ollama_LinguaggioChiaro(*args):
-    text = get_selected_text()
-    if not text:
-        show_message("Seleziona prima del testo!")
-        return
-
-    prompt = (
-        "Riscrivi il seguente testo applicando i principi del Linguaggio Chiaro (Plain Language) italiano: "
-        "usa parole comuni, frasi brevi, forma attiva ed elimina il burocratese. "
-        "Restituisci solo il testo riscritto.\n\n"
-        "TESTO:\n" + text
-    )
-    result = call_ollama_generate(prompt)
-    if result:
-        replace_text(result)
-
-def Ollama_Genera(*args):
-    text = get_selected_text()
-    if not text:
-        show_message("Scrivi prima un titolo o uno spunto e selezionalo!")
-        return
-
-    prompt = (
-        "Genera un testo completo, ben strutturato e approfondito, basato sul seguente spunto o titolo. "
-        "Scrivi in italiano.\n\n"
-        "SPUNTO:\n" + text
-    )
-    result = call_ollama_generate(prompt)
-    if result:
-        doc = get_current_doc()
-        sel = get_selection(doc)
-        cursor = sel.getText().createTextCursorByRange(sel)
-        cursor.collapseToEnd()
-        sel.getText().insertString(cursor, "\n\n" + result, False)
-
 # Esporta le funzioni per OpenOffice
 g_exportedScripts = (
     Ollama_Migliora, 
@@ -325,7 +289,5 @@ g_exportedScripts = (
     Ollama_TraduciInglese,
     Ollama_Formale,
     Ollama_PromptImmagine,
-    Ollama_AnalisiTono,
-    Ollama_LinguaggioChiaro,
-    Ollama_Genera
+    Ollama_AnalisiTono
 )
