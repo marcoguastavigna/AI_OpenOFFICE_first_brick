@@ -27,7 +27,8 @@ fi
 JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
 # 3. Chiamata Ollama
-RESPONSE=$($CURL --silent --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
+# Timeout aumentato a 5 minuti (300s) per Mac Intel o modelli pesanti
+RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD" 2>&1)
 
 # 4. Verifica risposta vuota
 if [ -z "$RESPONSE" ]; then
@@ -35,19 +36,22 @@ if [ -z "$RESPONSE" ]; then
     exit 0
 fi
 
-# 5. Estrazione Intelligente
+# 5. Parsing con gestione Encoding esplicita
+export PYTHONIOENCODING=utf-8
+
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
+raw_data = sys.stdin.read()
 try:
-    data = json.load(sys.stdin)
+    data = json.loads(raw_data, strict=False)
     if 'error' in data:
         print('ERRORE OLLAMA: ' + data['error'])
     elif 'response' in data:
         print(data['response'])
     else:
-        print('ERRORE IMPREVISTO: ' + str(data))
+        print('ERRORE STRUTTURA: ' + str(data))
 except Exception as e:
-    print('ERRORE DI PARSING: ' + sys.stdin.read())
+    print('ERRORE PYTHON: ' + str(e))
 " 2>&1)
 
 # 6. Output

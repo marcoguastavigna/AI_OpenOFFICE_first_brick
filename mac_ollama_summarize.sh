@@ -24,8 +24,8 @@ fi
 JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
 # 3. Chiamata Ollama
-# Usiamo --no-buffer per sicurezza
-RESPONSE=$($CURL --silent --no-buffer --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
+# Timeout aumentato a 5 minuti (300s) per Mac Intel o modelli pesanti
+RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD" 2>&1)
 
 # 4. Verifica
 if [ -z "$RESPONSE" ]; then
@@ -44,8 +44,8 @@ import sys, json
 raw_data = sys.stdin.read()
 
 try:
-    # Tenta il parsing
-    data = json.loads(raw_data)
+    # Tenta il parsing con strict=False per accettare caratteri di controllo (es. \n reali)
+    data = json.loads(raw_data, strict=False)
     
     if 'error' in data:
         print('ERRORE OLLAMA: ' + data['error'])

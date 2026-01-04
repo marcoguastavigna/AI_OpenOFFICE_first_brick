@@ -26,7 +26,8 @@ fi
 JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
 # 3. Chiamata Ollama
-RESPONSE=$($CURL --silent --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
+# Timeout aumentato a 5 minuti (300s) per Mac Intel o modelli pesanti
+RESPONSE=$($CURL --silent --show-error --max-time 300 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD" 2>&1)
 
 # 4. Verifica risposta vuota
 if [ -z "$RESPONSE" ]; then
@@ -34,19 +35,34 @@ if [ -z "$RESPONSE" ]; then
     exit 0
 fi
 
-# 5. Estrazione Intelligente (cerca 'response' O 'error')
+# 5. Parsing con gestione Encoding esplicita
+# PYTHONIOENCODING=utf-8 forza python a non usare ASCII
+export PYTHONIOENCODING=utf-8
+
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
+
+# Leggiamo tutto lo stream
+raw_data = sys.stdin.read()
+
 try:
-    data = json.load(sys.stdin)
+    # Tenta il parsing con strict=False per accettare caratteri di controllo (es. \n reali)
+    data = json.loads(raw_data, strict=False)
+    
     if 'error' in data:
         print('ERRORE OLLAMA: ' + data['error'])
     elif 'response' in data:
+        # Tutto ok
         print(data['response'])
     else:
-        print('ERRORE IMPREVISTO: Risposta JSON strana: ' + str(data))
+        print('ERRORE STRUTTURA: ' + str(data))
+
 except Exception as e:
-    print('ERRORE DI PARSING: Il server ha restituito qualcosa che non è JSON.\n' + sys.stdin.read())
+    # Se fallisce, stampiamo l'errore Python e un pezzo del dato
+    print('ERRORE PYTHON: ' + str(e))
+    # print('--- INIZIO DATI RICEVUTI ---')
+    # print(raw_data[:200]) 
+    # print('--- FINE DATI ---')
 " 2>&1)
 
 # 6. Output
