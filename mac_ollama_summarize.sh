@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# OLLAMA MACOS QUICK ACTION: RIASSUMI (DEBUG)
+# OLLAMA MACOS QUICK ACTION: RIASSUMI (FIX UTF8)
 # ==============================================================================
 
 # Percorsi assoluti
@@ -20,36 +20,47 @@ if [ -z "$INPUT_TEXT" ]; then
     exit 0
 fi
 
-# 2. Escape JSON (Python gestisce meglio i caratteri speciali)
+# 2. Escape JSON (Python)
 JSON_PAYLOAD=$($PYTHON -c "import json, sys; print(json.dumps({'model': '$MODEL', 'prompt': '$PROMPT_PREFIX\n\n' + sys.argv[1], 'stream': False}))" "$INPUT_TEXT")
 
-# 3. Chiamata Ollama (timeout 2 minuti)
-# --fail non lo mettiamo per poter leggere il corpo dell'errore (es. 404 message)
-RESPONSE=$($CURL --silent --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
+# 3. Chiamata Ollama
+# Usiamo --no-buffer per sicurezza
+RESPONSE=$($CURL --silent --no-buffer --show-error --max-time 120 -X POST "$OLLAMA_URL" -H "Content-Type: application/json" -d "$JSON_PAYLOAD")
 
-# 4. Verifica se curl ha fallito completamente (stringa vuota)
+# 4. Verifica
 if [ -z "$RESPONSE" ]; then
-    echo "Errore: Connessione fallita. Ollama è acceso?"
+    echo "Errore: Risposta vuota da Ollama."
     exit 0
 fi
 
-# 5. Estrazione Intelligente & Debug
+# 5. Parsing con gestione Encoding esplicita
+# PYTHONIOENCODING=utf-8 forza python a non usare ASCII
+export PYTHONIOENCODING=utf-8
+
 CLEAN_RESPONSE=$(echo "$RESPONSE" | $PYTHON -c "
 import sys, json
+
+# Leggiamo tutto lo stream
 raw_data = sys.stdin.read()
+
 try:
+    # Tenta il parsing
     data = json.loads(raw_data)
+    
     if 'error' in data:
         print('ERRORE OLLAMA: ' + data['error'])
     elif 'response' in data:
+        # Tutto ok
         print(data['response'])
     else:
-        print('ERRORE STRUTTURA JSON: ' + str(data))
+        print('ERRORE STRUTTURA: ' + str(data))
+
 except Exception as e:
-    # Se non è JSON, mostriamo i primi 200 caratteri di cosa abbiamo ricevuto
-    print('ERRORE DI COMUNICAZIONE.')
-    print('Non ho ricevuto JSON valido. Ecco cosa è arrivato (primi 100 car):')
-    print(raw_data[:100])
+    # Se fallisce, stampiamo l'errore Python e un pezzo del dato
+    print('ERRORE PYTHON: ' + str(e))
+    print('--- INIZIO DATI RICEVUTI ---')
+    print(raw_data[:200]) # Primi 200 caratteri
+    print('--- FINE DATI ---')
 " 2>&1)
 
 # 6. Output
